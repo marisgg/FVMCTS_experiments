@@ -100,25 +100,7 @@ function run_experiment(prob, solver_name, nevals, logdir)
         end
         return nothing
     end
-    #=
-    if solver_name == :iql
-        solver = IQLearningSolver(
-            JointEpsGreedyLegalPolicy(mdp, 0.01, [MersenneTwister(1991+i) for i in 1:n_agents(mdp)]),
-            rng=MersenneTwister(133331), n_episodes=1000*n_agents(mdp),
-            max_episode_length=MAX_STEPS, eval_every=1000
-        )
-        df = offline_evaluate(Dict(solver_name => solver), mdp, 20, nevals, MAX_STEPS)
-        CSV.write(joinpath(logdir, "$(exp_name).csv"), df)
-        for k in unique(df.policy)
-            fdf = filter(r->r[:policy] == k, df)
-            vals = fdf.discret
-            uvals = fdf.undiscret
-            @info k (mean=mean(vals), std=std(vals))
-            @info k (mean=mean(uvals), std=std(uvals))
-        end
-        return nothing
-    end
-    =#
+
     d = 10
     n = 500*PSET[prob].nagents
 
@@ -140,11 +122,6 @@ function run_experiment(prob, solver_name, nevals, logdir)
         solver = get_maxplus_solver(d, n, c, k, true, true, false)
     elseif solver_name == :varel
         solver = get_varel_solver(d, n, c)
-    #=
-    elseif solver_name == :mcts
-        solver = FCMCTSSolver(n_iterations=n, depth=d, exploration_constant=c,
-                              rng=MersenneTwister(8))
-    =#
     end
     @info exp_name
     df = online_evaluate(Dict(solver_name=>solver), mdp, nevals, MAX_STEPS)
