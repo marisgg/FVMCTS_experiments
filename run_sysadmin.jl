@@ -59,7 +59,7 @@ const PSET = Dict(
     "ringofring_local" => RingofRingSysAdmin{false},
 )
 
-function run_experiment(prob, nagents, solver_name, nevals, logdir)
+function run_experiment(prob, nagents, solver_name, nevals, d, n, c, k, logdir)
     if startswith(prob, "ringofring")
         # we build rings of rings where each ring is of size 3!
         @assert nagents % 3 == 0
@@ -103,4 +103,35 @@ function run_experiment(prob, nagents, solver_name, nevals, logdir)
 end
 
 function main(args)
+    prob = args[1]
+
+    nagents = parse(Int, args[2])
+
+    solver = Symbol(args[3])
+
+    nevals = parse(Int, args[4])
+    
+    if length(args) < 5
+        logdir = "."
+    else
+        logdir = args[5]
+    end
+
+    if solver == "random"
+        d = 0
+        n = 0
+        c = 0
+        k = 0
+    else
+        d = parse(Int, args[6])
+
+        n = parse(Int, args[7])
+
+        c = parse(Int, args[8])
+        
+        k = parse(Int, args[9])    
+    end
+    run_experiment(prob, nagents, solver, nevals, d, n, c, k, logdir)
 end
+
+main(ARGS)
