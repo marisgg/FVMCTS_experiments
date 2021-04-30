@@ -16,7 +16,7 @@ sleep(0.1)
     using MultiAgentPOMDPs
     using FactoredValueMCTS
     using MultiUAVDelivery
-
+    using Random
     using Statistics
     using Distributions
     include("pipeline.jl")
@@ -57,31 +57,9 @@ function get_varel_solver(d, n, c)
     return solver
 end
 
-function setup(pset, rewset)
-    uavparams = UAVParameters(XY_AXIS_RES=pset.XY_AXIS_RES,
-                              XYDOT_LIM=pset.XYDOT_LIM,
-                              XYDOT_STEP=pset.XYDOT_STEP,
-                              PROXIMITY_THRESH=1.5*pset.XY_AXIS_RES,
-                              CG_PROXIMITY_THRESH=3.0*pset.XY_AXIS_RES)
-
-    dynamics = FirstOrderUAVDynamics(timestep=1.0,
-                                     noise=Distributions.MvNormal([pset.NOISESTD, pset.NOISESTD]),
-                                     params=uavparams)
-
-    goal_regions, region_to_uavids = get_quadrant_goal_regions(pset.nagents,
-                                                               pset.XY_AXIS_RES,
-                                                               MersenneTwister(7))
-
-    mdp = MultiUAVDeliveryMDP(nagents=pset.nagents, dynamics=dynamics,
-                              goal_regions=goal_regions, region_to_uavids=region_to_uavids,
-                              goal_bonus=rewset.goal_bonus, prox_scaling=rewset.prox_scaling,
-                              repul_pen=rewset.repul_pen, dyn_scaling=rewset.dynamics_scaling)
-
-    return mdp
-end
 
 function run_experiment(prob, solver_name, nevals, logdir)
-    mdp = setup(PSET[prob], REWSET)
+    mdp = FirstOrderMultiUAVDelivery(pset=PSET[prob], rewset=REWSET)
 
     psetvals = join(("$p1=$p2" for (p1, p2) in pairs(PSET[prob])), ",")
     rsetvals = join(("$p1=$p2" for (p1, p2) in pairs(REWSET)), ",")
@@ -95,14 +73,14 @@ function run_experiment(prob, solver_name, nevals, logdir)
             fdf = filter(r->r[:policy] == k, df)
             vals = fdf.discret
             uvals = fdf.undiscret
-            @info k (mean=mean(vals), std=std(vals))
-            @info k (mean=mean(uvals), std=std(uvals))
+            @info k mean=mean(vals) std=std(vals)
+            @info k mean=mean(uvals) std=std(uvals)
         end
         return nothing
     end
 
     d = 10
-    n = 500*PSET[prob].nagents
+    n = 5*PSET[prob].nagents
 
     if prob == 1
         c = 5
@@ -117,10 +95,12 @@ function run_experiment(prob, solver_name, nevals, logdir)
         c = 30
         k = 20
     end
-    exp_name *= "_d=$(d),n=$(n),c=$(c),k=$(k)"
+    
     if solver_name == :maxplus
+        exp_name *= "_d=$(d),n=$(n),c=$(c),k=$(k)"
         solver = get_maxplus_solver(d, n, c, k, true, true, false)
     elseif solver_name == :varel
+        exp_name *= "_d=$(d),n=$(n),c=$(c)"
         solver = get_varel_solver(d, n, c)
     end
     @info exp_name
@@ -130,8 +110,8 @@ function run_experiment(prob, solver_name, nevals, logdir)
         fdf = filter(r->r[:policy] == k, df)
         vals = fdf.discret
         uvals = fdf.undiscret
-        @info k (mean=mean(vals), std=std(vals))
-        @info k (mean=mean(uvals), std=std(uvals))
+        @info "discounted" k mean=mean(vals) std=std(vals)
+        @info "undiscounted" k mean=mean(uvals) std=std(uvals)
     end
 end
 
@@ -145,7 +125,8 @@ function main(args)
     else
         logdir = args[4]
     end
+    !isdir(logdir) && mkpath(logdir)
     run_experiment(prob, solver, nevals, logdir)
 end
 
-main(ARGS)
+(abspath(PROGRAM_FILE) == @__FILE__) && main(ARGS)

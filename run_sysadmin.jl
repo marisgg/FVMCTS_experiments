@@ -115,6 +115,8 @@ function main(args)
     
     logdir = args[5]
 
+    !isdir(logdir) && mkpath(logdir)
+
     if solver == :random
         d = 0
         n = 0
