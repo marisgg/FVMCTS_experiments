@@ -16,7 +16,8 @@ sleep(0.1)
     using MultiAgentPOMDPs
     using FactoredValueMCTS
     using MultiAgentSysAdmin
-
+    using MultiAgentSysAdmin: StarSysAdmin
+    using Random
     using Statistics
     using Distributions
     include("pipeline.jl")
@@ -78,16 +79,17 @@ function run_experiment(prob, nagents, solver_name, nevals, d, n, c, k, logdir)
             fdf = filter(r->r[:policy] == k, df)
             vals = fdf.discret
             uvals = fdf.undiscret
-            @info k (mean=mean(vals), std=std(vals))
-            @info k (mean=mean(uvals), std=std(uvals))
+            @info "discounted" k mean=mean(vals) std=std(vals)
+            @info "undiscounted" k mean=mean(uvals) std=std(uvals)
         end
         return nothing
     end
 
-    exp_name *= "_d=$(d),n=$(n),c=$(c),k=$(k)"
     if solver_name == :maxplus
+        exp_name *= "_d=$(d),n=$(n),c=$(c),k=$(k)"
         solver = get_maxplus_solver(d, n, c, k, true, true, false)
     elseif solver_name == :varel
+        exp_name *= "_d=$(d),n=$(n),c=$(c)"
         solver = get_varel_solver(d, n, c)
     end
     @info exp_name    
@@ -97,8 +99,8 @@ function run_experiment(prob, nagents, solver_name, nevals, d, n, c, k, logdir)
         fdf = filter(r->r[:policy] == k, df)
         vals = fdf.discret
         uvals = fdf.undiscret
-        @info k (mean=mean(vals), std=std(vals))
-        @info k (mean=mean(uvals), std=std(uvals))
+        @info "discounted" k mean=mean(vals) std=std(vals)
+        @info "undiscounted" k mean=mean(uvals) std=std(uvals)
     end
 end
 
@@ -111,13 +113,9 @@ function main(args)
 
     nevals = parse(Int, args[4])
     
-    if length(args) < 5
-        logdir = "."
-    else
-        logdir = args[5]
-    end
+    logdir = args[5]
 
-    if solver == "random"
+    if solver == :random
         d = 0
         n = 0
         c = 0
@@ -134,4 +132,4 @@ function main(args)
     run_experiment(prob, nagents, solver, nevals, d, n, c, k, logdir)
 end
 
-main(ARGS)
+(abspath(PROGRAM_FILE) == @__FILE__) && main(ARGS)
