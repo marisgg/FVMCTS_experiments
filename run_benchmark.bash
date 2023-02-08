@@ -1,8 +1,8 @@
 #!/bin/bash
 
-n_agents = "4 10 16"
+n_agents="4 10 16"
 
-n_sims = "10 25 50 100 1000 10000"
+n_sims="10 25 50 100 1000 10000"
 
 set -u
 
@@ -20,12 +20,12 @@ do
     for s in "${n_sims[@]}"
     do
         echo $
-        set +x
+        set -x
         julia --project run_sysadmin.jl ${env} random
         julia --project run_sysadmin.jl ${env} maxplus ${n_episodes} ${directory} ${d} ${s} ${c} ${mp_iters}
         julia --project run_sysadmin.jl ${env} varel ${n_episodes} ${directory} ${d} ${s} ${c} ${mp_iters}
-        set -x
+        set +x
     done
 done
 
-echo "INFO: Finished running experiments for ${env}. Results are in ${directory}.
+echo "INFO: Finished running experiments for ${env}. Results are in ${directory}."
